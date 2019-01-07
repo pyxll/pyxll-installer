@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+This whole file can be removed if not required.
+It is here as an example of some simple UI appearance changes.
+
+This Localization item is used to over-ride the standard "LicenseAgreementDlgDescription" message.
+
+The Ids for all the messages can be found in, for example, the WixUI_en-us.wxl file in the WiX source
+code: https://github.com/wixtoolset/wix4/blob/develop/src/ext/UIExtension/wixlib/WixUI_en-us.wxl
+
+See also http://wixtoolset.org/documentation/manual/v3/wixui/wixui_customizations.html
+-->
+<WixLocalization Culture="en-us" xmlns="http://schemas.microsoft.com/wix/2006/localization">
+    <!--Un-comment to use this override-->
+    <!--
+    <String Id="LicenseAgreementDlgDescription">Please read the following license agreement carefully</String>
+    -->
+</WixLocalization>

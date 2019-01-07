@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<?define ProductVersion = "{{ product_version }}"?>
+<?define ProductUpgradeCode = "{{ product_guid }}"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension">
+  <Product Id="*" Name="!(loc.ProductName)"
+           Language="!(loc.LANG)"
+           Version="$(var.ProductVersion)"
+           Manufacturer="!(loc.ProductManufacturer)"
+           UpgradeCode="$(var.ProductUpgradeCode)">
+
+    <Package InstallerVersion="200"
+             AdminImage="no"
+             InstallPrivileges="limited"
+             InstallScope="perUser"
+             Compressed="yes"
+             Manufacturer="!(loc.ProductManufacturer)"
+             Description="!(loc.ProductDescription)"
+             Comments="!(loc.ProductCopyright)"/>
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <MajorUpgrade
+        AllowSameVersionUpgrades="no"
+        DowngradeErrorMessage="A newer version of [ProductName] is already installed.  If you are sure you want to downgrade, remove the existing installation via the Control Panel" />
+
+    <WixVariable Id="WixUIBannerBmp" Value="{{ banner_bmp }}" />
+    <WixVariable Id="WixUIDialogBmp" Value="{{ dialog_bmp }}" />
+    <WixVariable Id="WixUILicenseRtf" Value="{{ license_rtf }}" />
+
+    <!-- ICONS -->
+    <Icon Id="ProductIcon" SourceFile="{{ product_icon }}" />
+    <Property Id="ARPPRODUCTICON" Value="ProductIcon" />
+
+    <!-- Windows Installer set TARGETDIR to the local hard drive with the most free space.  The top-level Directory must be Id="TARGETDIR" Name="SourceDir" -->
+    <SetProperty Id="InstallFolder" Value="[LocalAppDataFolder]" Before="CostFinalize"><![CDATA[NOT Privileged]]></SetProperty>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="InstallFolder">
+        <Directory Id="COMPANYDIR" Name="!(loc.ProductManufacturer)">
+          {# Add any sub-directories recursively #}
+          {%- macro add_directory(directory) -%}
+          <Directory Id="{{ directory.id }}" Name="{% if directory.name == '|PRODUCT_NAME|' %}!(loc.ProductName){% else %}{{ directory.name }}{% endif %}">
+            {%- for child in directory.children.values() %}
+          {{ add_directory(child) }}
+            {%- endfor %}
+          </Directory>
+          {%- endmacro %}
+          {%- for directory in content_directories.values() %}
+          {{- add_directory(directory) }}
+          {%- endfor %}
+        </Directory>
+      </Directory>
+    </Directory>
+
+    <!-- There must be a feature in the project and all components must be installed into the feature to be installed. -->
+    <Feature Id="ExcelAddIn" Title="!(loc.ProductName)" Description="!(loc.ProductDescription)" Level="1" AllowAdvertise="no">
+      <ComponentGroupRef Id="ContentGroup"/>
+    </Feature>
+
+    <!-- Required for the custom action -->
+    <PropertyRef Id="NETFRAMEWORK40CLIENT" />
+    <Condition Message="[ProductName] installer requires .NET Framework 4.0.">Installed OR NETFRAMEWORK40CLIENT</Condition>
+
+    <!--See http://wixtoolset.org/documentation/manual/v3/wixui/dialog_reference/wixui_installdir.html for more information -->
+    <Property Id="WIXUI_INSTALLDIR" Value="ADDINFOLDER" />
+    <UI Id="UI">
+      <UIRef Id="WixUI_InstallDir"/>
+    </UI>
+
+    <!--IMPORTANT ALL MS OFFICE SUPPORTED VERSIONS ARE HERE: Office 2003, 2007, 2010, 2013, 2016. Keep it up to date.-->
+    <!-- These numbers will be parsed individually in the custom actions with InvariantCulture and NumberStyles.Any -->
+    <Property Id="OFFICEREGKEYS" Value="{% set comma = joiner(',') %}{% for v in office_versions %}{{ comma() }}{{ "%0.1f"|format(v) }}{% endfor %}" />
+    {% if xll_32 %}<Property Id="XLL32" Value="{{ xll_32 }}" />{% endif %}
+    {% if xll_64 %}<Property Id="XLL64" Value="{{ xll_64 }}" />{% endif %}
+
+    <!-- The property below will disable the repair button. -->
+    <!--<Property Id="ARPNOREPAIR" Value="yes" />-->
+    <Property Id="PromptToCloseProcesses" Value="EXCEL" />
+    <Property Id="PromptToCloseDisplayNames" Value="Microsoft Excel" />
+
+    <!--
+    To handle registering the XLL, a custom action project must be created and a project reference must be created.
+    The included custom action project will create a DLL that WiX can understand.
+    The binary refers to the dll created by the custom action project.
+    If values are to be passed to the custom action project, the set property actions must precede the action specifying the DLL entry point.
+    The InstallExecuteSequence specifies the sequence to run the actions and the AdminExecuteSequence provide rights to non-admin users (to the registry).
+    For more information on custom actions, read
+    http://www.codeproject.com/Articles/132918/Creating-Custom-Action-for-WIX-Written-in-Managed?fid=1599130&df=90&mpp=25&noise=3&prof=False&sort=Position&view=Quick&spc=Relaxed&select=4131367&fr=1#xx0xx
+    -->
+    <Binary Id="InstallerCA.CA.dll" SourceFile="{{ custom_action_dll }}" />
+    <CustomAction Id="Action_RegisterAddIn.SetProperty" Return="check" Property="Action_RegisterAddIn" Value="OFFICEREGKEYS=[OFFICEREGKEYS];XLL32=[XLL32];XLL64=[XLL64]" />
+    <CustomAction Id="Action_RegisterAddIn" BinaryKey="InstallerCA.CA.dll" DllEntry="CaRegisterAddIn" Return="check" Execute="immediate" />
+    <CustomAction Id="Action_UnRegisterAddIn.SetProperty" Return="check" Property="Action_UnRegisterAddIn" Value="OFFICEREGKEYS=[OFFICEREGKEYS];XLL32=[XLL32];XLL64=[XLL64]" />
+    <CustomAction Id="Action_UnRegisterAddIn" BinaryKey="InstallerCA.CA.dll" DllEntry="CaUnRegisterAddIn" Return="check" Execute="immediate" />
+    <CustomAction Id="Action_CloseAppsPrompt" BinaryKey="InstallerCA.CA.dll" DllEntry="ClosePrompt" Return="check" />
+    <InstallExecuteSequence>
+      <Custom Action="Action_CloseAppsPrompt" After="Action_RegisterAddIn.SetProperty" />
+      <Custom Action="Action_RegisterAddIn.SetProperty" Before="Action_RegisterAddIn">NOT Installed</Custom>
+      <Custom Action="Action_RegisterAddIn" Before="InstallFinalize">NOT Installed</Custom>
+      <Custom Action="Action_UnRegisterAddIn.SetProperty" Before="Action_UnRegisterAddIn">Installed AND NOT UPGRADINGPRODUCTCODE</Custom>
+      <Custom Action="Action_UnRegisterAddIn" Before="InstallFinalize">Installed AND NOT UPGRADINGPRODUCTCODE</Custom>
+    </InstallExecuteSequence>
+    <AdminExecuteSequence>
+      <Custom Action="Action_CloseAppsPrompt" After="Action_RegisterAddIn.SetProperty" />
+      <Custom Action="Action_RegisterAddIn.SetProperty" Before="InstallFinalize">NOT Installed</Custom>
+      <Custom Action="Action_RegisterAddIn" After="Action_RegisterAddIn.SetProperty">NOT Installed</Custom>
+      <Custom Action="Action_UnRegisterAddIn.SetProperty" Before="InstallFinalize">Installed AND NOT UPGRADINGPRODUCTCODE</Custom>
+      <Custom Action="Action_UnRegisterAddIn" After="Action_UnRegisterAddIn.SetProperty">Installed AND NOT UPGRADINGPRODUCTCODE</Custom>
+    </AdminExecuteSequence>
+  </Product>
+
+  <Fragment>
+    <ComponentGroup Id="ContentGroup">
+      {%- for component in content_components.values() %}
+      <Component Id="{{ component.id }}" Guid="{{ component.guid }}" Directory="{{ component.directory.id }}">
+        {%- for file in component.files %}
+        <File Id="{{ file.id }}" Name="{{ file.name }}" Source="{{ file.source }}" />
+        {%- endfor %}
+        <RemoveFile Id="{{ component.directory.remove_file_id }}" Name="*.*" On="uninstall" />
+        <RemoveFolder Id="{{ component.directory.remove_folder_id }}" Directory="{{ component.directory.id }}" On="uninstall" />
+      </Component>
+      {%- endfor %}
+    </ComponentGroup>
+  </Fragment>
+</Wix>

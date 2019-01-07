@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WixLocalization Culture="en-us" xmlns="http://schemas.microsoft.com/wix/2006/localization">
+  <String Id="LANG">1033</String>
+  <String Id="ProductName">{{ localized_product_details.en_us.name }}</String>
+  <String Id="ProductDescription">{{ localized_product_details.en_us.description }}</String>
+  <String Id="ProductManufacturer">{{ localized_product_details.en_us.manufacturer }}</String>
+  <String Id="ProductCopyright">{{ localized_product_details.en_us.copyright }}</String>
+</WixLocalization>

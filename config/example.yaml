@@ -1,0 +1,61 @@
+
+# Wix configuration for finding the command line tools.
+# If this is blank then the tools will be looked for on the system path.
+wix:
+  bin: C:\Program Files (x86)\WiX Toolset v3.11\bin
+
+installer:
+  # Templates the the Wix source files
+  product_template: templates/Product.wxs
+  custom_messages: templates/CustomMessages.wxl
+  localizations:
+    - templates/EnglishLoc.wxl
+
+  # Use a unique GUIDs for this product
+  product_guid: "{eb357ddf-d3f1-427a-8db0-9e0671f2e05f}"
+
+  # Output MSI filename
+  msi_filename: "PyXLL-Example.msi"
+
+  # Product version should be updated each time a new installer is released
+  product_version: 0.0.1
+
+  # Product details should be unique for each product.
+  # These are used as text in the installer and can be specified in multiple languages
+  # by adding more localization templates.
+  localized_product_details:
+    en_us:
+      name: PyXLL Deployment Example
+      description: Example project showing how to package a PyXLL add-in as an MSI.
+      manufacturer: PyXLL Ltd
+      copyright: Copyright PyXLL Ltd 2019
+
+  # XLL files, relative to the 'content' folder.
+  # Either the 32 bit or 64 add-ins can be specified, or both.
+  xll_32: x86/pyxll.xll
+  xll_64: x64/pyxll.xll
+
+  # Resources used for the installer
+  product_icon: resources/Icon.ico
+  license_rtf: resources/EULA.rtf
+  banner_bmp: resources/Banner.jpg
+  dialog_bmp: resources/Dialog.jpg
+
+  # Files to be included in the msi. This should include your PyXLL xll files, config files, Python code
+  # and Python distributions if you are including those.
+  # The 'exclude' list contains file names and wildcards to exclude from the installer.
+  content:
+    root: content/example
+    #exclude:
+    #  - "*.pyc"
+
+  # Versions of Office to look for when installing
+  office_versions:
+    - 11.0
+    - 12.0
+    - 14.0
+    - 15.0
+    - 16.0
+
+  # Custom action. This doesn't need changing unless you are building the custom action dll yourself.
+  custom_action_dll: custom_action/InstallerCA/bin/Release/InstallerCA.CA.dll
