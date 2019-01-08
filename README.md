@@ -8,7 +8,7 @@ based add-in have a valid license. If you need to distribute your add-in outside
 you cannot control usage, speak to [sales@pyxll.com](mailto:sales@pyxll.com) about a redistributable
 license.
 
-The Wix Toolset is required to build MSI installers, and may be downloaded from [http://wixtoolset.org/]().
+The Wix Toolset is required to build MSI installers, and may be downloaded from [http://wixtoolset.org/](http://wixtoolset.org/).
 
 Much of this project is based on the [Excel-DNA Wix Installer](https://github.com/Excel-DNA/WiXInstaller)
 by [Govert van Drimmelen](https://github.com/govert).  
