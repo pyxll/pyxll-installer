@@ -46,7 +46,7 @@ def find_wix_toolset(config):
     stdout, stderr = pipe.communicate()
     if 0 != pipe.wait():
         _log.error(stderr)
-        raise RuntimeError("Error running candle.exe. Check config and ensure Wix toolset is installed.")
+        raise RuntimeError("Error running light.exe. Check config and ensure Wix toolset is installed.")
 
     return {
         "candle": candle,
