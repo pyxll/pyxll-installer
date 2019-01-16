@@ -153,7 +153,7 @@ change certain properties, like log level and path, without having to modify any
 
 ## Installer Configuration
 
-The `config` folder contains and example configuration file. Copy this and rename it to the name of your project
+The `config` folder contains an example configuration file. Copy this and rename it to the name of your project
 and edit it to your requirements.
 
 At the very least you should set the following *installer* settings:
