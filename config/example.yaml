@@ -5,7 +5,7 @@ wix:
   bin: C:\Program Files (x86)\WiX Toolset v3.11\bin
 
 installer:
-  # Templates the the Wix source files
+  # Templates for the Wix source files
   product_template: templates/Product.wxs
   custom_messages: templates/CustomMessages.wxl
   localizations:
