@@ -224,7 +224,7 @@ def main():
 
     config_name = os.path.splitext(os.path.basename(config))[0]
     with open(config) as fh:
-        config = yaml.load(fh)
+        config = yaml.safe_load(fh)
 
     # Get the Wix command line tools
     wix_tools = find_wix_toolset(config)
