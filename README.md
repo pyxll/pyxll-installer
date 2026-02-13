@@ -1,35 +1,47 @@
 
 # PyXLL Installer
 
-This project builds an MSI installer for PyXLL based add-ins.
+This is an example project that builds an MSI installer for PyXLL based add-ins.
 
 **Note:** PyXLL is licensed *per-user*. It is your responsibility to ensure that all users using your PyXLL
 based add-in have a valid license. If you need to distribute your add-in outside of your organization where
 you cannot control usage, speak to [sales@pyxll.com](mailto:sales@pyxll.com) about a redistributable
 license.
 
-The Wix Toolset is required to build MSI installers, and may be downloaded from [http://wixtoolset.org/](http://wixtoolset.org/).
+The Wix Toolset is required to build MSI installers and may be downloaded from
+[http://wixtoolset.org/](http://wixtoolset.org/).
 
-Much of this project is based on the [Excel-DNA Wix Installer](https://github.com/Excel-DNA/WiXInstaller)
-by [Govert van Drimmelen](https://github.com/govert).  
+WiX v6 has been tested and found to work correctly. If you are using a different version of WiX, you may need
+to make modifications for it to work.
+
+Using the WiX Toolset may require a maintenance agreement. You should check the WiX website for details to 
+ensure you are compliant.
+
+Use this project as a template. It is only an example intended to help get you started. You are expected to fork
+this project and adapt the script, templates, and configuration to suit your own build environment and installer
+requirements.
+
+This project is based on the [Excel-DNA WiX Installer](https://github.com/Excel-DNA/WiXInstaller)
+by [Govert van Drimmelen](https://github.com/govert).
 
 ## Introduction
 
 There are various ways to distribute a PyXLL add-in, typically:
 
 1. Sharing Python code on a network drive.
-2. Pulling code from a deployment server.
+2. Bundling everything into a single zip file and scripting the installation.
 3. Building an installer.
 
 Option 1. is the simplest option as it allows your Python code to be deployed centrally, ensuring that all users
 see the same code at all times.
 
-Option 2. works if you already have a mechanism for distributing Python code to client PCs. This could be by using
-a custom conda channel or running your own deployment server like Enthought's EDM, or your own home-grown solution.
+Option 2. is the most commonly used option for large PyXLL deployments. It is less complicated than building
+an MSI, can include the Python runtime as well as all dependencies, and automatic updates are possible 
+using a PyXLL *startup script*.
 
-Option 3. is useful when you need to deploy to PCs that might not have fast or reliable access to your network,
-and so accessing a shared drive or a deployment server is not feasible. The Python runtime can be bundled with
-PyXLL into a single standalone installer.
+Option 3. may be useful when you need to deploy to PCs that might not have fast or reliable access to your network,
+and so accessing a shared drive is not feasible. The Python runtime can be bundled with PyXLL into a single
+standalone installer.
 
 If you need to distribute PyXLL outside of your organization, please make sure you have consulted with
 [sales@pyxll.com](mailto:sales@pyxll.com) to ensure you have an appropriate license. PyXLL licenses are not
@@ -40,7 +52,7 @@ valid for redistributing PyXLL based add-ins, and you will need a separate licen
 Before starting to build your installer you need to decide the following:
 
 1. Do you want to include Python in your installer?
-2. Will you support 32 bit Excel, 64 bit Excel or both?
+2. Will you support 32 bit Excel, 64 bit Excel, or both?
 
 If you do not include Python in your installer, your end users will have to have the correct version of Python
 installed, including any dependencies not included in your installer.
@@ -175,7 +187,7 @@ only require one of these, you can remove whichever you don't need.
 The resources `product_icon`, `license_rtf`, `banner_bmp` and `dialog_bmp` should all be changed before finalizing
 your installer to customize the appearance of the installer and to include your own license terms.
 
-Depending on where you have installed the Wix Toolset, and what version you have, you may need to update
+Depending on where you have installed the WiX Toolset, and what version you have, you may need to update
 **wix.bin**.
 
 ## Building the Installer
@@ -206,7 +218,7 @@ If successful, your installer will now be in the `_build` folder!
 
 ## Advanced Customization and Localization
 
-The Wix source files are in the `templates` folder. You can copy and edit these and update your YAML config
+The WiX source files are in the `templates` folder. You can copy and edit these and update your YAML config
 to refer to your own templates.
 
 If you want to support multiple languages in your installed, create localization templates based on

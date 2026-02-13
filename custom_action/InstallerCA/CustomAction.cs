@@ -1,11 +1,11 @@
-﻿using Microsoft.Deployment.WindowsInstaller;
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Globalization;
+using WixToolset.Dtf.WindowsInstaller;
 
 namespace InstallerCA
 {
@@ -36,16 +36,10 @@ namespace InstallerCA
                 szXll32Bit = session["XLL32"];
                 szXll64Bit = session["XLL64"];
                 szFolder = session["ADDINFOLDER"];
+                session.Log($"CaRegisterAddIn Args: OFFICEREGKEYS={szOfficeRegKeyVersions}, XLL32={szXll32Bit}, XLL64={szXll64Bit}, szFolder={szFolder}");
 
-                if (szXll32Bit.Length > 0 && szFolder.Length > 0)
-                {
-                    szXll32Bit = szFolder.ToString() + szXll32Bit.ToString();
-                }
-
-                if (szXll64Bit.Length > 0 && szFolder.Length > 0)
-                {
-                    szXll64Bit = szFolder.ToString() + szXll64Bit.ToString();
-                }
+                szXll32Bit = Path.Combine(szFolder, szXll32Bit);
+                szXll64Bit = Path.Combine(szFolder, szXll64Bit);
 
                 if (szOfficeRegKeyVersions.Length > 0)
                 {
@@ -164,18 +158,14 @@ namespace InstallerCA
                 szXll32Bit = session["XLL32"];
                 szXll64Bit = session["XLL64"];
                 szFolder = session["ADDINFOLDER"];
+                session.Log($"CaUnRegisterAddIn AddInFolder={szFolder ?? "<null>"}");
+                session.Log($"CaUnRegisterAddIn Args: OFFICEREGKEYS={szOfficeRegKeyVersions ?? "<null>"}, XLL32={szXll32Bit ?? "<null>"}, XLL64={szXll64Bit ?? "<null>"}, szFolder={szFolder ?? "<null>"}");
 
-                if (szXll32Bit.Length > 0 && szFolder.Length > 0)
-                {
-                    szXll32Bit = szFolder.ToString() + szXll32Bit.ToString();
-                }
+                szXll32Bit = Path.Combine(szFolder, szXll32Bit);
+                szXll64Bit = Path.Combine(szFolder, szXll64Bit);
 
-                if (szXll64Bit.Length > 0 && szFolder.Length > 0)
-                {
-                    szXll64Bit = szFolder.ToString() + szXll64Bit.ToString();
-                }
 
-                if (szOfficeRegKeyVersions.Length > 0)
+		        if (szOfficeRegKeyVersions.Length > 0)
                 {
                     lstVersions = szOfficeRegKeyVersions.Split(',').ToList();
 
@@ -188,21 +178,44 @@ namespace InstallerCA
 
                             string szKeyName = szBaseAddInKey + szOfficeVersionKey + @"\Excel\Options";
 
-                            RegistryKey rkAddInKey = Registry.CurrentUser.OpenSubKey(szKeyName, true);
-                            if (rkAddInKey != null)
-                            {
-                                string[] szValueNames = rkAddInKey.GetValueNames();
+                            var rkAddInKey = Registry.CurrentUser.OpenSubKey(szKeyName, true);
+                            if (rkAddInKey == null) continue;
 
-                                foreach (string szValueName in szValueNames)
+                            var szValueNames = rkAddInKey.GetValueNames();
+                            var allOpenKeyValues = new List<string>();
+
+                            foreach (string szValueName in szValueNames)
+                            {
+                                if (!szValueName.StartsWith("OPEN")) continue;
+
+                                string openValue = rkAddInKey.GetValue(szValueName)?.ToString() ?? "";
+
+                                bool matchXll32 = !string.IsNullOrEmpty(szXll32Bit) && openValue.Contains(szXll32Bit);
+                                bool matchXll64 = !string.IsNullOrEmpty(szXll64Bit) && openValue.Contains(szXll64Bit);
+
+                                if (matchXll32 || matchXll64)
                                 {
-                                     //unregister both 32 and 64 xll
-                                    if (szValueName.StartsWith("OPEN") &&
-                                        ((szXll32Bit.Length > 0 && rkAddInKey.GetValue(szValueName).ToString().Contains(szXll32Bit)) || 
-                                         (szXll64Bit.Length > 0 && rkAddInKey.GetValue(szValueName).ToString().Contains(szXll64Bit))))
-                                    {
-                                        rkAddInKey.DeleteValue(szValueName);
-                                    }
+                                    session.Log($"Deleting registry value '{szValueName}' because matchXll32={matchXll32}, matchXll64={matchXll64}");
+                                    // Do not add to the list — so it’s dropped.
                                 }
+                                else
+                                {
+                                    session.Log($"Preserving OPEN value '{szValueName}' = '{openValue}'");
+                                    allOpenKeyValues.Add(openValue);
+                                }
+
+                                rkAddInKey.DeleteValue(szValueName);
+                            }
+
+                            session.Log($"Rewriting OPEN keys: {allOpenKeyValues.Count} remaining.");
+
+                            int i = 0;
+                            foreach (var openValue in allOpenKeyValues)
+                            {
+                                string keyName = i == 0 ? "OPEN" : $"OPEN{i}";
+                                session.Log($"Rewriting {keyName} = '{openValue}'");
+                                rkAddInKey.SetValue(keyName, openValue);
+                                i++;
                             }
                         }
                     }
@@ -212,7 +225,7 @@ namespace InstallerCA
             }
             catch (Exception ex)
             {
-                session.Log(ex.Message);
+                session.Log($"CaUnRegisterAddIn Exception: {ex.Message}");
             }
 
             return bFoundOffice ? ActionResult.Success : ActionResult.Failure;

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<WixLocalization Culture="en-us" xmlns="http://schemas.microsoft.com/wix/2006/localization">
-  <String Id="LANG">1033</String>
-  <String Id="ProductName">{{ localized_product_details.en_us.name }}</String>
-  <String Id="ProductDescription">{{ localized_product_details.en_us.description }}</String>
-  <String Id="ProductManufacturer">{{ localized_product_details.en_us.manufacturer }}</String>
-  <String Id="ProductCopyright">{{ localized_product_details.en_us.copyright }}</String>
+<WixLocalization Culture="en-us" xmlns="http://wixtoolset.org/schemas/v4/wxl">
+  <String Id="LANG" Value="1033" />
+  <String Id="ProductName" Value="{{ localized_product_details.en_us.name }}" />
+  <String Id="ProductDescription" Value="{{ localized_product_details.en_us.description }}" />
+  <String Id="ProductManufacturer" Value="{{ localized_product_details.en_us.manufacturer }}" />
+  <String Id="ProductCopyright" Value="{{ localized_product_details.en_us.copyright }}" />
 </WixLocalization>

@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <?define ProductVersion = "{{ product_version }}"?>
 <?define ProductUpgradeCode = "{{ product_guid }}"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
-     xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension">
-  <Product Id="*" Name="!(loc.ProductName)"
+
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:netfx="http://wixtoolset.org/schemas/v4/wxs/netfx"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <Package Name="!(loc.ProductName)"
            Language="!(loc.LANG)"
            Version="$(var.ProductVersion)"
            Manufacturer="!(loc.ProductManufacturer)"
-           UpgradeCode="$(var.ProductUpgradeCode)">
+           UpgradeCode="$(var.ProductUpgradeCode)"
+           InstallerVersion="200"
+           Scope="perUser"
+           Compressed="yes">
 
-    <Package InstallerVersion="200"
-             AdminImage="no"
-             InstallPrivileges="limited"
-             InstallScope="perUser"
-             Compressed="yes"
-             Manufacturer="!(loc.ProductManufacturer)"
-             Description="!(loc.ProductDescription)"
-             Comments="!(loc.ProductCopyright)"/>
+    <SummaryInformation Description="!(loc.ProductDescription)"
+                        Comments="!(loc.ProductCopyright)" />
 
     <MediaTemplate EmbedCab="yes" />
 
@@ -32,9 +32,7 @@
     <Icon Id="ProductIcon" SourceFile="{{ product_icon }}" />
     <Property Id="ARPPRODUCTICON" Value="ProductIcon" />
 
-    <!-- Windows Installer set TARGETDIR to the local hard drive with the most free space.  The top-level Directory must be Id="TARGETDIR" Name="SourceDir" -->
-    <SetProperty Id="InstallFolder" Value="[LocalAppDataFolder]" Before="CostFinalize"><![CDATA[NOT Privileged]]></SetProperty>
-    <Directory Id="TARGETDIR" Name="SourceDir">
+    <StandardDirectory Id="LocalAppDataFolder">
       <Directory Id="InstallFolder">
         <Directory Id="COMPANYDIR" Name="!(loc.ProductManufacturer)">
           {# Add any sub-directories recursively #}
@@ -50,7 +48,7 @@
           {%- endfor %}
         </Directory>
       </Directory>
-    </Directory>
+    </StandardDirectory>
 
     <!-- There must be a feature in the project and all components must be installed into the feature to be installed. -->
     <Feature Id="ExcelAddIn" Title="!(loc.ProductName)" Description="!(loc.ProductDescription)" Level="1" AllowAdvertise="no">
@@ -58,14 +56,11 @@
     </Feature>
 
     <!-- Required for the custom action -->
-    <PropertyRef Id="NETFRAMEWORK40CLIENT" />
-    <Condition Message="[ProductName] installer requires .NET Framework 4.0.">Installed OR NETFRAMEWORK40CLIENT</Condition>
+    <netfx:DotNetCompatibilityCheck Property="NETFRAMEWORK40CLIENT" RuntimeType="desktop" Version="v4.0" Platform="x86" />
+    <Launch Condition="Installed OR NETFRAMEWORK40CLIENT" Message="[ProductName] installer requires .NET Framework 4.0." />
 
-    <!--See http://wixtoolset.org/documentation/manual/v3/wixui/dialog_reference/wixui_installdir.html for more information -->
-    <Property Id="WIXUI_INSTALLDIR" Value="ADDINFOLDER" />
-    <UI Id="UI">
-      <UIRef Id="WixUI_InstallDir"/>
-    </UI>
+    <!-- See the WiX UI InstallDir dialog set for more information -->
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="ADDINFOLDER" />
 
     <!--IMPORTANT ALL MS OFFICE SUPPORTED VERSIONS ARE HERE: Office 2003, 2007, 2010, 2013, 2016. Keep it up to date.-->
     <!-- These numbers will be parsed individually in the custom actions with InvariantCulture and NumberStyles.Any -->
@@ -89,25 +84,26 @@
     -->
     <Binary Id="InstallerCA.CA.dll" SourceFile="{{ custom_action_dll }}" />
     <CustomAction Id="Action_RegisterAddIn.SetProperty" Return="check" Property="Action_RegisterAddIn" Value="OFFICEREGKEYS=[OFFICEREGKEYS];XLL32=[XLL32];XLL64=[XLL64]" />
-    <CustomAction Id="Action_RegisterAddIn" BinaryKey="InstallerCA.CA.dll" DllEntry="CaRegisterAddIn" Return="check" Execute="immediate" />
+    <CustomAction Id="Action_RegisterAddIn" BinaryRef="InstallerCA.CA.dll" DllEntry="CaRegisterAddIn" Return="check" Execute="immediate" />
     <CustomAction Id="Action_UnRegisterAddIn.SetProperty" Return="check" Property="Action_UnRegisterAddIn" Value="OFFICEREGKEYS=[OFFICEREGKEYS];XLL32=[XLL32];XLL64=[XLL64]" />
-    <CustomAction Id="Action_UnRegisterAddIn" BinaryKey="InstallerCA.CA.dll" DllEntry="CaUnRegisterAddIn" Return="check" Execute="immediate" />
-    <CustomAction Id="Action_CloseAppsPrompt" BinaryKey="InstallerCA.CA.dll" DllEntry="ClosePrompt" Return="check" />
+    <CustomAction Id="Action_UnRegisterAddIn" BinaryRef="InstallerCA.CA.dll" DllEntry="CaUnRegisterAddIn" Return="check" Execute="immediate" />
+    <CustomAction Id="Action_CloseAppsPrompt" BinaryRef="InstallerCA.CA.dll" DllEntry="ClosePrompt" Return="check" />
     <InstallExecuteSequence>
       <Custom Action="Action_CloseAppsPrompt" After="Action_RegisterAddIn.SetProperty" />
-      <Custom Action="Action_RegisterAddIn.SetProperty" Before="Action_RegisterAddIn">NOT Installed</Custom>
-      <Custom Action="Action_RegisterAddIn" Before="InstallFinalize">NOT Installed</Custom>
-      <Custom Action="Action_UnRegisterAddIn.SetProperty" Before="Action_UnRegisterAddIn">Installed AND NOT UPGRADINGPRODUCTCODE</Custom>
-      <Custom Action="Action_UnRegisterAddIn" Before="InstallFinalize">Installed AND NOT UPGRADINGPRODUCTCODE</Custom>
+      <Custom Action="Action_RegisterAddIn.SetProperty" Before="Action_RegisterAddIn" Condition="NOT Installed" />
+      <Custom Action="Action_RegisterAddIn" Before="InstallFinalize" Condition="NOT Installed" />
+      <Custom Action="Action_UnRegisterAddIn.SetProperty" Before="Action_UnRegisterAddIn" Condition="Installed AND NOT UPGRADINGPRODUCTCODE" />
+      <Custom Action="Action_UnRegisterAddIn" Before="InstallFinalize" Condition="Installed AND NOT UPGRADINGPRODUCTCODE" />
     </InstallExecuteSequence>
     <AdminExecuteSequence>
       <Custom Action="Action_CloseAppsPrompt" After="Action_RegisterAddIn.SetProperty" />
-      <Custom Action="Action_RegisterAddIn.SetProperty" Before="InstallFinalize">NOT Installed</Custom>
-      <Custom Action="Action_RegisterAddIn" After="Action_RegisterAddIn.SetProperty">NOT Installed</Custom>
-      <Custom Action="Action_UnRegisterAddIn.SetProperty" Before="InstallFinalize">Installed AND NOT UPGRADINGPRODUCTCODE</Custom>
-      <Custom Action="Action_UnRegisterAddIn" After="Action_UnRegisterAddIn.SetProperty">Installed AND NOT UPGRADINGPRODUCTCODE</Custom>
+      <Custom Action="Action_RegisterAddIn.SetProperty" Before="InstallFinalize" Condition="NOT Installed" />
+      <Custom Action="Action_RegisterAddIn" After="Action_RegisterAddIn.SetProperty" Condition="NOT Installed" />
+      <Custom Action="Action_UnRegisterAddIn.SetProperty" Before="InstallFinalize" Condition="Installed AND NOT UPGRADINGPRODUCTCODE" />
+      <Custom Action="Action_UnRegisterAddIn" After="Action_UnRegisterAddIn.SetProperty" Condition="Installed AND NOT UPGRADINGPRODUCTCODE" />
     </AdminExecuteSequence>
-  </Product>
+
+  </Package>
 
   <Fragment>
     <ComponentGroup Id="ContentGroup">
@@ -122,4 +118,5 @@
       {%- endfor %}
     </ComponentGroup>
   </Fragment>
+
 </Wix>
