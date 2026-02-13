@@ -2,7 +2,7 @@
 # Wix configuration for finding the command line tools.
 # If this is blank then the tools will be looked for on the system path.
 wix:
-  bin: C:\Program Files (x86)\WiX Toolset v3.11\bin
+  bin: C:\Program Files\WiX Toolset v6.0\bin
 
 installer:
   # Templates for the Wix source files
@@ -28,7 +28,7 @@ installer:
       name: PyXLL Deployment Example
       description: Example project showing how to package a PyXLL add-in as an MSI.
       manufacturer: PyXLL Ltd
-      copyright: Copyright PyXLL Ltd 2019
+      copyright: Copyright PyXLL Ltd
 
   # XLL files, relative to the 'content' folder.
   # Either the 32 bit or 64 add-ins can be specified, or both.
@@ -58,4 +58,4 @@ installer:
     - 16.0
 
   # Custom action. This doesn't need changing unless you are building the custom action dll yourself.
-  custom_action_dll: custom_action/InstallerCA/bin/Release/InstallerCA.CA.dll
+  custom_action_dll: custom_action/InstallerCA/bin/Release/net40/InstallerCA.CA.dll

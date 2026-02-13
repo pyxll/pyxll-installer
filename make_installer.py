@@ -4,8 +4,18 @@ Creates MSI installers for PyXLL projects using Wix.
 Requires the Wix Toolset to be installed
 http://wixtoolset.org/
 
+Using the Wix Toolset may require a maintenance agreement.
+You should check the Wix website for details to ensure you are
+compliant.
+
 Copy and edit the example config file for your own project.
 Customizations can be made by copying and editing the templates.
+
+This script is provided as an example only and comes with no guarantees,
+warranties, or promises of fitness for any purpose.
+No support is offered for using or modifying it.
+You are expected to fork this project and adapt the script, templates, and
+configuration to suit your own build environment and installer requirements.
 
 Usage:
 python make_installer -c config/example.yaml
@@ -26,31 +36,28 @@ _log = logging.getLogger()
 
 
 def find_wix_toolset(config):
-    """Find the Wix toolset commandline binaries"""
+    """Find the Wix toolset commandline binaries."""
     bin_folder = config.get("wix", {}).get("bin", "")
-    candle = "candle.exe"
-    light = "light.exe"
+    wix = "wix.exe"
+
     if bin_folder:
         if not os.path.exists(bin_folder):
             raise RuntimeError("Wix toolset bin folder '%s' does not exists. Check config." % bin_folder)
-        candle = os.path.join(bin_folder, candle)
-        light = os.path.join(bin_folder, light)
+        wix = os.path.join(bin_folder, wix)
 
-    pipe = subprocess.Popen([candle, "-?"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # Verify wix.exe is runnable
+    pipe = subprocess.Popen([wix, "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = pipe.communicate()
     if 0 != pipe.wait():
         _log.error(stderr)
-        raise RuntimeError("Error running candle.exe. Check config and ensure Wix toolset is installed.")
+        raise RuntimeError("Error running wix.exe. Check config and ensure Wix Toolset v6+ is installed.")
 
-    pipe = subprocess.Popen([light, "-?"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = pipe.communicate()
-    if 0 != pipe.wait():
-        _log.error(stderr)
-        raise RuntimeError("Error running light.exe. Check config and ensure Wix toolset is installed.")
+    version_str = (stdout or b"").decode(errors="replace").strip()
+    if version_str:
+        _log.info("Using WiX Toolset: %s", version_str)
 
     return {
-        "candle": candle,
-        "light": light
+        "wix": wix,
     }
 
 
@@ -197,17 +204,16 @@ def build_installer(config, build_dir, wix_tools):
         localizations.append(render_template(config["installer"]["custom_messages"], template_args))
 
     # Wix extensions used to build the installer
-    extensions = ["WixUIExtension", "WixNetFxExtension", "WixUtilExtension"]
+    extensions = ["WixToolset.UI.wixext", "WixToolset.NetFx.wixext", "WixToolset.Util.wixext"]
     ext_args = list(itertools.chain(*(["-ext", ext] for ext in extensions)))
 
-    # Use candle to compile the wxs file
-    output_file = os.path.join(build_dir, os.path.splitext(os.path.basename(input_file))[0] + ".wixobj")
-    subprocess.check_call([wix_tools["candle"], input_file, "-o", output_file] + ext_args)
-
-    # And light to build the MSI
+    # Build the MSI directly (no candle/light in WiX v6)
     product_msi = os.path.join(build_dir, config["installer"]["msi_filename"])
     loc_args = list(itertools.chain(*[["-loc", x] for x in localizations]))
-    subprocess.check_call([wix_tools["light"], output_file, "-o", product_msi] + ext_args + loc_args)
+
+    subprocess.check_call(
+        [wix_tools["wix"], "build", input_file, "-o", product_msi] + ext_args + loc_args
+    )
 
     _log.info("Success! Finished Building installer '%s'" % product_msi)
 
